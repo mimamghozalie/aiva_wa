@@ -14,22 +14,19 @@ import { DevicesEntity } from '@app/devices/devices.entity';
 
 const envConfig: any = process.env;
 
-@Entity()
+@Entity('users')
 export class UserEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column('text', {
     unique: true,
-    
+
   })
   email: string;
 
   @Column('text')
   firstName: string;
-
-  @Column('text')
-  lastName: string;
 
   @Column('text')
   password: string;
@@ -40,8 +37,8 @@ export class UserEntity {
 
   @Column({
     type: 'enum',
-    enum: ['owner', 'admin', 'staff', 'customer'],
-    default: 'customer',
+    enum: ['owner', 'admin', 'staff', 'customer', 'user'],
+    default: 'user',
   })
   role: string;
 
@@ -85,9 +82,10 @@ export class UserEntity {
 
   private get token() {
     const { id, email, role } = this;
-    const param = {id, email};
-    
-    
+    const payload = { uid: id, uemail: email }
+    const param = role === 'user' ? { ...payload } : { ...payload, role };
+    console.log(param)
+
     return jwt.sign(param, envConfig.SECRET, {
       expiresIn: envConfig.TOKEN_EXP,
     });

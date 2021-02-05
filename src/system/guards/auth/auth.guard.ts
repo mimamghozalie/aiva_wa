@@ -2,8 +2,6 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
-  HttpException,
-  HttpStatus,
   UnauthorizedException,
 } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
@@ -26,12 +24,10 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException('Invalid token type');
     }
     const token = auth.split(' ')[1];
-    console.log(envConfig.SECRET)
     try {
       const decoded: any = jwt.verify(token, envConfig.SECRET);
       return decoded;
     } catch (err) {
-      console.log(err)
       throw new UnauthorizedException();
     }
   }
