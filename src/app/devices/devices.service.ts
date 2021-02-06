@@ -1,3 +1,4 @@
+import { WhatsappService } from "@libs/whatsapp/whatsapp.service";
 import { BadRequestException, Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
@@ -5,9 +6,19 @@ import { DevicesEntity } from "./devices.entity";
 
 @Injectable()
 export class DevicesService {
+
+
     constructor(
-        @InjectRepository(DevicesEntity) private devicesRepo: Repository<DevicesEntity>
-    ) { }
+        @InjectRepository(DevicesEntity) private devicesRepo: Repository<DevicesEntity>,
+        private whatsappService: WhatsappService
+    ) {
+
+        // subscribe ke pengguna yang sudah melakukan pair device whatsapp mereka
+        this.whatsappService.newAuth.subscribe(whatsappDevice => {
+            console.log(whatsappDevice)
+
+        })
+    }
 
     async myDevices(author: string) {
         try {

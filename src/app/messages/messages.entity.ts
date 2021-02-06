@@ -18,6 +18,11 @@ export class MessagesEntity {
     })
     messageType: 'send' | 'received';
 
+    @Column({
+        nullable: true
+    })
+    msgId: string;
+
     @Column()
     messageData: string;
 

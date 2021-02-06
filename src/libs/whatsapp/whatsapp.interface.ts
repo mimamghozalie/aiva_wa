@@ -83,6 +83,7 @@ export interface WAMethod {
 export interface newAuth {
   id: string;
   session: string;
+  status: 'pairing' | 'connected' | 'offline'
 }
 
 export interface sendMessageParam {
@@ -91,4 +92,10 @@ export interface sendMessageParam {
   mediaPath: string;
   type: 'image' | 'video';
   caption?: string;
+}
+
+export interface MessageResponse {
+  error: boolean;
+  message?: string;
+  data?: any;
 }

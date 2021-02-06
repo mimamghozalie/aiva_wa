@@ -9,6 +9,7 @@ import {
   newAuth,
   sendMessageParam,
   MessageAck,
+  MessageResponse,
 } from './whatsapp.interface';
 import * as PATH from 'path';
 import { writeFile, existsSync, mkdirSync } from 'fs';
@@ -22,7 +23,7 @@ export class WhatsappService {
 
   public onMessage = new Subject<MessageReceived>();
   public onMessageAck = new Subject<MessageAck>();
-  constructor() {}
+  constructor() { }
 
   /**
    * init Whatsapp instance
@@ -31,8 +32,7 @@ export class WhatsappService {
   async initInstance(userId: string, session?: any): Promise<string> {
     return new Promise((res, rej) => {
       try {
-        const pathWin =
-          'C:/Program Files/Google/Chrome/Application/chrome.exe';
+        const pathWin = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
         const WA = new Client({
           puppeteer: {
             headless: true,
@@ -67,6 +67,7 @@ export class WhatsappService {
           this.newAuth.next({
             id: userId,
             session: session,
+            status: 'connected'
           });
         });
 
@@ -173,6 +174,7 @@ export class WhatsappService {
           });
         });
       } catch (error) {
+        console.error(`Fatal error Whatsapp Connection ${error.message}`)
         rej(error.message);
       }
     });
@@ -217,26 +219,24 @@ export class WhatsappService {
 
   /**
    * Get Instance Connection
-   * @param userId @unique
+   * @param deviceId @unique
    */
-  getConnection(userId): Observable<WAMethod> {
+  getConnection(deviceId: string): Observable<WAMethod> {
     return this.WAConnection$.pipe(
       map(users => {
-        const user = users.find(user => user.id === userId);
-        if (user) {
-          return user.connection;
-        }
-        return null;
+        // console.log(users);
+        // console.log(users.find(u => u.id === deviceId).connection)
+        return users.find(u => u.id === deviceId).connection;
       }),
     );
   }
 
-  async instanceDestroy(userId: string): Promise<void> {
+  async instanceDestroy(deviceId: string): Promise<void> {
     try {
       const instance = this.WAConnection$.getValue();
 
       instance.forEach(async (row, index) => {
-        if (row.id == userId) {
+        if (row.id == deviceId) {
           try {
             const connection = row.connection;
             // await connection.logout();
@@ -256,31 +256,33 @@ export class WhatsappService {
   }
 
   async sendMessage(
-    userId,
+    deviceId,
     phone: string,
     msg: any,
-  ): Promise<WhatsAppResponse> {
-    return new Promise((resolve, reject) => {
-      this.getConnection(userId).subscribe((res: any) => {
-        if (!res) {
-          return resolve({
-            error: true,
-            message: 'Connection Refused',
-          });
-        }
-        res
-          .sendMessage(phone, msg)
-          .then(wares => {
-            resolve(wares);
-          })
-          .catch(err =>
+  ): Promise<MessageResponse> {
+    return new Promise(async (resolve, reject) => {
+      try {
+        return this.getConnection(deviceId).subscribe(async (client: any) => {
+          if (!client) {
             resolve({
-              error: true,
-              message: err,
-            }),
-          );
-      });
-    });
+              message: 'Device Not Connected',
+              error: true
+            })
+          }
+
+          resolve({
+            error: false,
+            data: await client.sendMessage(phone + '@c.us', msg)
+          })
+
+        })
+      } catch (error) {
+        reject({
+          error: true,
+          message: error.message
+        })
+      }
+    })
   }
 
   async sendMedia(param: sendMessageParam) {
