@@ -1,8 +1,24 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { DevicesEntity } from "./devices.entity";
 
 @Injectable()
 export class DevicesService {
-    constructor(){}
+    constructor(
+        @InjectRepository(DevicesEntity) private devicesRepo: Repository<DevicesEntity>
+    ) { }
 
-    
+    async myDevices(author: string) {
+        try {
+            return await this.devicesRepo.find({ author: { id: author } })
+        } catch (error) {
+            throw new BadRequestException()
+        }
+    }
+
+    async addDevices(author: string, name: string) {
+        const device = this.devicesRepo.insert({ name, author: { id: author } })
+        return await device;
+    }
 }

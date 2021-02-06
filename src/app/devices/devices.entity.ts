@@ -1,3 +1,4 @@
+import { MessagesEntity } from "@app/messages/messages.entity";
 import { UserEntity } from "@app/user/user.entity";
 import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 
@@ -11,7 +12,7 @@ export class DevicesEntity {
     @Column()
     name: string;
 
-    @Column('integer', {default: 100})
+    @Column('integer', { default: 100 })
     quota: number;
 
     @Column('text', {
@@ -29,7 +30,9 @@ export class DevicesEntity {
     })
     active: boolean;
 
-    @Column('text')
+    @Column('text', {
+        nullable: true
+    })
     accessToken: string;
 
     @Column('text', {
@@ -71,6 +74,12 @@ export class DevicesEntity {
     @ManyToOne(
         type => UserEntity,
         user => user.id,
-      )
+    )
     author: UserEntity;
+
+    @ManyToOne(
+        type => MessagesEntity,
+        msg => msg.devices
+    )
+    messages: MessagesEntity
 }
