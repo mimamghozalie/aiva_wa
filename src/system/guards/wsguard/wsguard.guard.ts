@@ -12,16 +12,13 @@ const envConfig: any = process.env;
 export class WsGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request: Socket = context.switchToWs().getClient();
-    const headers = request.handshake.headers;
-    console.log(headers);
+    const token = request.handshake.query
 
-    return Promise.resolve(true);
-
-    // if (!request.headers.authorization) {
-    //   throw new UnauthorizedException();
-    // }
-    // request.user = await this.validateToken(request.headers.authorization);
-    // return true;
+    if (!token.authorization) {
+      return false;
+    }
+    request['user'] = await this.validateToken(token.authorization);
+    return true;
   }
 
   async validateToken(auth: string) {
@@ -34,7 +31,7 @@ export class WsGuard implements CanActivate {
       const decoded: any = await verify(token, envConfig.SECRET);
       return decoded;
     } catch (err) {
-      throw new UnauthorizedException();
+      return false;
     }
   }
 }

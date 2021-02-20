@@ -18,10 +18,10 @@ export const routes: Routes = [
         path: 'auth',
         module: AuthModule
       },
-      {
-        path: 'devices',
-        module: DevicesModule
-      },
+      // {
+      //   path: 'devices',
+      //   module: DevicesModule
+      // },
       {
         path: 'message',
         module: MessagesModule
@@ -31,7 +31,12 @@ export const routes: Routes = [
 ];
 
 @Module({
-  imports: [RouterModule.forRoutes(routes), SocketTestModule, DevicesModule, MessagesModule],
+  imports: [
+    RouterModule.forRoutes(routes),
+    SocketTestModule,
+    // DevicesModule, 
+    MessagesModule
+  ],
 })
 export class AppRoutingModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

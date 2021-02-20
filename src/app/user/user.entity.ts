@@ -26,14 +26,11 @@ export class UserEntity {
   email: string;
 
   @Column('text')
-  firstName: string;
+  fullname: string;
 
   @Column('text')
   password: string;
 
-  // Sosial Media
-  @Column('text', { default: '' })
-  facebook_id: string;
 
   @Column({
     type: 'enum',
@@ -92,14 +89,16 @@ export class UserEntity {
   }
 
   withToken() {
-    const { id, email, token, firstName } = this;
+    const { id, email, token, fullname, role } = this;
     const user = {
       id,
       email,
-      firstName,
+      fullname,
       token,
       token_type: envConfig.TOKEN_TYPE,
     };
+
+    role == 'owner' ? user['role'] = role : user;
 
     return user;
   }

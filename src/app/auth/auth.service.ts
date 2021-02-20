@@ -17,7 +17,7 @@ export class AuthService {
 
   async onModuleInit() {
     const data: Partial<UserEntity> = {
-      firstName: 'imam',
+      fullname: 'imam',
       email: 'mimamghozalie@gmail.com',
       password: '1',
       role: 'owner',
@@ -70,7 +70,7 @@ export class AuthService {
         select: [
           'id',
           'email',
-          'firstName',
+          'fullname',
           'password',
           'status',
           'role',

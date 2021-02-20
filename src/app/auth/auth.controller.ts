@@ -5,11 +5,11 @@ import { AuthService } from './auth.service';
 @Controller()
 export class AuthController {
 
-    constructor(
-        private authService: AuthService,
-    ) {}
+  constructor(
+    private authService: AuthService,
+  ) { }
 
-    @Post('login')
+  @Post('login')
   @HttpCode(200)
   async login(@Body() data: LoginUserDto) {
     return await this.authService.login(data);

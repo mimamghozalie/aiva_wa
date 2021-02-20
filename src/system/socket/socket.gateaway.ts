@@ -18,7 +18,7 @@ export class AppSocket {
 
   users = new BehaviorSubject([]);
 
-  constructor() {}
+  constructor() { }
 
   getUsers(): Observable<SocketUser[]> {
     return this.users.pipe(
@@ -32,7 +32,7 @@ export class AppSocket {
     );
   }
 
-  afterInit() {}
+  afterInit() { }
 
   private handleConnection(client: Socket) {
     const currentUsers = this.users.value;
