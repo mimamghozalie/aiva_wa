@@ -4,6 +4,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppConfigModule } from '../config/config.module';
 import { ConfigService, ConfigModule } from '@nestjs/config';
 
+
+// libs
+import { MongooseModule } from "@nestjs/mongoose";
 @Module({
   imports: [
     TypeOrmModule.forRootAsync({
@@ -20,7 +23,14 @@ import { ConfigService, ConfigModule } from '@nestjs/config';
       }),
       inject: [ConfigService],
     }),
+    MongooseModule.forRootAsync({
+      imports: [AppConfigModule, ConfigModule],
+      useFactory: (config: ConfigService) => ({
+        uri: config.get<string>('MONGODB_URI')
+      }),
+      inject: [ConfigService]
+    })
   ],
   providers: [DatabaseService],
 })
-export class DatabaseModule {}
+export class DatabaseModule { }

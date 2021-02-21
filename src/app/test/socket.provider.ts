@@ -1,6 +1,6 @@
 import { getConnection } from 'typeorm';
 import { Injectable, UseGuards } from '@nestjs/common';
-import { AppSocket } from '@system/socket/socket.gateaway';
+import { AppSocket } from '@system/websocket/websocket.gateaway';
 import { SubscribeMessage, WsResponse } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
 import { from, Observable } from 'rxjs';

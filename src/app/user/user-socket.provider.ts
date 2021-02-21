@@ -1,7 +1,7 @@
 import { Injectable, UseGuards } from "@nestjs/common";
 import { SubscribeMessage } from "@nestjs/websockets";
 import { WsGuard } from "@system/guards/wsguard/wsguard.guard";
-import { AppSocket } from "@system/socket/socket.gateaway";
+import { AppSocket } from "@system/websocket/websocket.gateaway";
 import { Socket } from "socket.io";
 import { USER_SOCKETS_TYPE } from "./sockets/type";
 import { UserService } from "./user.service";

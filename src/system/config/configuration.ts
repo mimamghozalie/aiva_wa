@@ -20,6 +20,8 @@ export const Config = Joi.object({
   DB_NAME: Joi.string().required(),
   DB_PORT: Joi.number().default(5432),
 
+  MONGODB_URI: Joi.string().default('mongodb://localhost:27017/aiva'),
+
   REDIS_HOST: Joi.string().default('localhost'),
   REDIS_PORT: Joi.number().default(6379),
   REDIS_PASS: Joi.string().optional(),
