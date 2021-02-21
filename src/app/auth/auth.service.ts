@@ -1,6 +1,5 @@
 import { UserEntity } from '@app/user/user.entity';
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ApiResponse } from '@system/model/api';
 import { Repository } from 'typeorm';
@@ -11,8 +10,7 @@ export class AuthService {
 
   constructor(
     @InjectRepository(UserEntity)
-    private userRepository: Repository<UserEntity>,
-    private jwtService: JwtService
+    private userRepository: Repository<UserEntity>
   ) { }
 
   async onModuleInit() {
@@ -22,7 +20,7 @@ export class AuthService {
       password: '1',
       role: 'owner',
       status: 'active',
-      maxDevices: 0
+      max_devices: 0
     };
 
     // Check if no user is registered
@@ -97,6 +95,7 @@ export class AuthService {
         data: {
           body: await user.withToken()
         },
+        statusCode: 200
       };
     } catch (error) {
       throw new BadRequestException('User not found.')
@@ -123,6 +122,13 @@ export class AuthService {
       }
     } catch (error) {
 
+    }
+  }
+
+  async getColumns(): Promise<ApiResponse> {
+    return {
+      statusCode: 200,
+      data: ['email', 'fullname', 'role', 'status', 'maxDevices', 'created', 'updated']
     }
   }
 }

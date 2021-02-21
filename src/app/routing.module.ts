@@ -1,10 +1,10 @@
 import { MiddlewareConsumer, NestModule, Module } from '@nestjs/common';
 import { Routes, RouterModule } from 'nest-router';
+import { PostModule } from '@app/post/post.module';
 import { AuthModule } from './auth/auth.module';
-import { DevicesModule } from './devices/devices.module';
 import { MessagesModule } from './messages/messages.module';
-import { SocketTestModule } from './test/test.module';
 import { UserModule } from './user/user.module';
+import { ApiSocketModule } from './socket.module';
 
 export const routes: Routes = [
   {
@@ -33,10 +33,15 @@ export const routes: Routes = [
 @Module({
   imports: [
     RouterModule.forRoutes(routes),
-    SocketTestModule,
+    UserModule,
+    // SocketTestModule,
     // DevicesModule, 
-    MessagesModule
+    MessagesModule,
+    PostModule,
+
+    ApiSocketModule
   ],
+  providers: [],
 })
 export class AppRoutingModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

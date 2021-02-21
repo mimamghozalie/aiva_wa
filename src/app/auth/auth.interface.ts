@@ -2,33 +2,28 @@ import { IsNotEmpty, MinLength, IsEmail, IsString } from 'class-validator';
 
 
 export class LoginUserDto {
- 
+
   @IsNotEmpty()
   @MinLength(5)
   @IsEmail()
   email: string;
 
- 
+
   @IsNotEmpty()
   @IsString()
   password: string;
 }
 
 export class RegisterUserDto {
-  
-  @IsNotEmpty()
-  firstName: string;
 
-  
   @IsNotEmpty()
-  lastName: string;
+  fullname: string;
 
-  
   @IsNotEmpty()
   @IsEmail()
   email: string;
 
-  
+
   @IsNotEmpty()
   password?: string;
 
@@ -37,7 +32,7 @@ export class RegisterUserDto {
 }
 
 export class ForgotEmailDto {
- 
+
   @IsNotEmpty()
   @MinLength(5)
   @IsEmail()

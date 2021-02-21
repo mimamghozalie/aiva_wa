@@ -1,0 +1,7 @@
+export enum SOCKET_POST {
+    COLUMNS = 'POST_COLUMNS',
+    FIND_ALL = 'POST_FIND_ALL',
+    FIND_ONE = 'POST_FIND_ONE',
+    UPDATE = 'POST_UPDATE',
+    DELETE = 'POST_DELETE',
+}

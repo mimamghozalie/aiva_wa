@@ -51,7 +51,7 @@ export class UserEntity {
   @Column('integer', {
     default: 1
   })
-  maxDevices: number;
+  max_devices: number;
 
 
   // relations
