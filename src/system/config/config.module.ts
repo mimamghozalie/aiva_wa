@@ -15,4 +15,4 @@ const path = `environtments/.env.${envFile}`;
   ],
   exports: [ConfigModule],
 })
-export class AppConfigModule {}
+export class SystemConfigModule { }
