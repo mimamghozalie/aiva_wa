@@ -3,14 +3,17 @@ import { Module } from '@nestjs/common';
 import { SystemConfigModule } from '@system/config/config.module';
 import { DatabaseModule } from '@system/database/database.module';
 import { SystemSocketModule } from '@system/websocket/websocket.module';
-import { AppWebSocketModule } from './ws/websocket.module';
 
+// Application Base
+import { AppWebSocketModule } from './ws/websocket.module';
+import { AppApiModule } from "./api/app-api.module";
 @Module({
   imports: [
     SystemConfigModule,
     DatabaseModule,
     SystemSocketModule,
-    AppWebSocketModule
+    AppWebSocketModule,
+    AppApiModule
   ],
 
 })

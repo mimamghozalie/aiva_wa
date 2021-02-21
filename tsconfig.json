@@ -14,7 +14,9 @@
     "paths": {
       "@app/*": ["src/app/*"],
       "@system/*": ["src/system/*"],
-      "@libs/*": ["src/libs/*"]
+      "@libs/*": ["src/libs/*"],
+      "@api/*": ["src/api/*"],
+      "@ws/*": ["src/ws/*"]
     }
   }
 }
