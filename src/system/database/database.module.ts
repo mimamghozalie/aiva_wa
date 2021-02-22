@@ -23,7 +23,7 @@ DB_ONE == 'true' ? modules.push(
       username: config.get('DB_USER'),
       password: config.get('DB_PASS'),
       database: config.get('DB_NAME').toString(),
-      entities: [__dirname + '../../../app/**/**.entity{.ts,.js}'],
+      entities: [__dirname + './../../api/**/**/**.entity{.ts,.js}'],
       synchronize: config.get('NODE_ENV') !== 'production',
     }),
     inject: [ConfigService],
