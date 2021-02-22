@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsOptional } from 'class-validator';
 
-export class GetQueryData {
+export class GetQueryDto {
   @IsNotEmpty()
   page: number = 1;
 
@@ -17,11 +17,8 @@ export class GetQueryData {
   filter?: string;
 
   @IsOptional()
-  filterValue?: string;
-
-  @IsOptional()
   search?: string;
 
   @IsOptional()
-  searchValue?: string;
+  column: string;
 }

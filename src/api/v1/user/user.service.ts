@@ -4,13 +4,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 
 // libs
-import { Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 import { hash, compare } from "bcrypt";
 
 // Apps
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
+import { GetQueryDto } from '@system/dto/querydata.dto';
 
 @Injectable()
 export class UserService {
@@ -20,21 +21,21 @@ export class UserService {
   ) { }
 
 
-  // async onModuleInit() {
-  //   const user = {
-  //     fullname: 'Mochamad Imam Ghozalie',
-  //     email: 'mimamghozalie@gmail.com',
-  //     password: '1',
-  //     status: 'active'
-  //   };
+  async onModuleInit() {
+    const user = {
+      fullname: 'Mochamad Imam Ghozalie',
+      email: 'mimamghozalie@gmail.com',
+      password: '1',
+      status: 'active'
+    };
 
-  //   // Cek apakah sudah ada pengguna
-  //   const checkOwner = await this.userRepo.count();
-  //   if (checkOwner > 0) { return; }
+    // Cek apakah sudah ada pengguna
+    const checkOwner = await this.userRepo.count();
+    if (checkOwner > 0) { return; }
 
-  //   // Buat akun hak akses Pemilik(owner)
-  //   this.create(user).then(console.log).catch(console.error);
-  // }
+    // Buat akun hak akses Pemilik(owner)
+    this.create(user).then(console.log).catch(console.error);
+  }
 
   async create(createUserDto: Partial<CreateUserDto>) {
     const { email } = createUserDto;
@@ -68,8 +69,48 @@ export class UserService {
 
   }
 
-  findAll() {
-    return `This action returns all user`;
+  async findAll(getQueryDto: GetQueryDto) {
+    const { filter, limit, orderBy, page, search, sort, column } = getQueryDto;
+    let qParam: any = {
+      take: limit,
+      skip: limit * (page - 1),
+      order: {
+        [orderBy]: sort.toUpperCase(),
+      }
+    };
+
+    column ? qParam['select'] = column.split(',') : ['id', 'fullname', 'email', 'status', 'phone', 'created', 'updated'];
+
+    let response;
+
+    if (filter) {
+      const field = filter.split(':');
+
+      response = await this.userRepo.findAndCount({
+        ...qParam,
+        where: {
+          [field[0]]: field[1].trim(),
+        },
+
+      });
+    } else if (search) {
+      const field = search.split(':');
+
+      response = await this.userRepo.findAndCount({
+        ...qParam,
+        where: {
+          [field[0]]: Like(`%${field[1].trim()}%`),
+        }
+      });
+    } else {
+      response = await this.userRepo.findAndCount({ ...qParam });
+    }
+
+    return {
+      data: response[0],
+      total: response[1],
+      statusCode: 200,
+    };
   }
 
   async findOne(id: string) {
