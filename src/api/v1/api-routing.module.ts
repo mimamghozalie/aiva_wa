@@ -5,6 +5,7 @@ import { Routes, RouterModule } from 'nest-router';
 
 // Apps Modules
 import { AboutModule } from './about/about.module';
+import { AuthModule } from './auth/auth.module';
 
 export const routes: Routes = [
   {
@@ -21,7 +22,8 @@ export const routes: Routes = [
 @Module({
   imports: [
     RouterModule.forRoutes(routes),
-    AboutModule
+    AboutModule,
+    AuthModule
   ],
   providers: [],
 })
