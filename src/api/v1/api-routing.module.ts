@@ -6,8 +6,9 @@ import { Routes, RouterModule } from 'nest-router';
 // Apps Modules
 import { AboutModule } from './about/about.module';
 import { AuthModule } from './auth/auth.module';
-import { RoleModule } from './user/role/role.module';
 import { UserModule } from './user/user.module';
+import { RoleModule } from './user/role/role.module';
+import { PermissionModule } from './user/permission/permission.module';
 
 export const routes: Routes = [
   {
@@ -23,13 +24,15 @@ export const routes: Routes = [
       },
       {
         path: 'user',
-        module: UserModule,
-        children: [
-          {
-            path: 'role',
-            module: RoleModule
-          }
-        ]
+        module: UserModule
+      },
+      {
+        path: 'role',
+        module: RoleModule
+      },
+      {
+        path: 'permission',
+        module: PermissionModule
       }
     ],
   },
