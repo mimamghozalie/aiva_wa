@@ -6,7 +6,7 @@ import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { GetQueryDto } from '@system/dto/querydata.dto';
 
-@Controller()
+@Controller('roles')
 export class RoleController {
   constructor(private readonly roleService: RoleService) { }
 
