@@ -76,10 +76,11 @@ export class UserService {
       skip: limit * (page - 1),
       order: {
         [orderBy]: sort.toUpperCase(),
-      }
+      },
+      relations: []
     };
 
-    column ? qParam['select'] = column.split(',') : ['id', 'fullname', 'email', 'status', 'phone', 'created', 'updated'];
+    column ? qParam['select'] = column : ['id', 'fullname', 'email', 'status', 'phone', 'created', 'updated'];
 
     let response;
 
@@ -123,5 +124,12 @@ export class UserService {
 
   async remove(id: string) {
     return await this.userRepo.delete(id)
+  }
+
+  async getDeviceLimit(author: string) {
+    return this.userRepo.findOne(
+      { id: author },
+      { select: ['device_limit'] }
+    )
   }
 }

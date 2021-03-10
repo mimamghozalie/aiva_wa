@@ -1,4 +1,6 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from "typeorm";
+
+import { Device } from "@api/v1/devices/entities/device.entity";
+import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity('users')
 export class User {
@@ -21,6 +23,11 @@ export class User {
     password: string;
 
     @Column({
+        default: 1
+    })
+    device_limit: number;
+
+    @Column({
         type: 'enum',
         enum: ['disabled', 'active', 'banned'],
         default: 'active',
@@ -32,5 +39,9 @@ export class User {
 
     @CreateDateColumn()
     updated: Date;
+
+    // Relations
+    @OneToMany(type => Device, d => d.author)
+    devices: Device;
 
 }

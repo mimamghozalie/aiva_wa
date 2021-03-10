@@ -1,12 +1,17 @@
 import { MiddlewareConsumer, NestModule, Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 
 // lib's
 import { Routes, RouterModule } from 'nest-router';
 
 // Apps Modules
+import { ResponseInterceptor } from '@api/middleware/response.interceptor';
 import { AboutModule } from './about/about.module';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
+// import { DevicesModule } from './devices/devices.module';
+import { DevicesModule } from './devices/devices.module';
+import { MessagesModule } from './messages/messages.module';
 
 export const routes: Routes = [
   {
@@ -23,6 +28,14 @@ export const routes: Routes = [
       {
         path: 'users',
         module: UserModule,
+      },
+      {
+        path: 'devices',
+        module: DevicesModule
+      },
+      {
+        path: 'messages',
+        module: MessagesModule
       }
     ],
   },
@@ -33,9 +46,16 @@ export const routes: Routes = [
     RouterModule.forRoutes(routes),
     AboutModule,
     AuthModule,
-    UserModule
+    UserModule,
+    DevicesModule,
+    MessagesModule,
   ],
-  providers: [],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ResponseInterceptor
+    }
+  ],
 })
 export class ApiRoutingV1Module implements NestModule {
   configure(consumer: MiddlewareConsumer) {

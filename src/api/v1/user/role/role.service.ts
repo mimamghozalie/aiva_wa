@@ -84,7 +84,7 @@ export class RoleService {
     };
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     return await this.roleRepo.findOne(id);
   }
 

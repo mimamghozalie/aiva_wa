@@ -3,7 +3,7 @@ import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from "typeor
 
 @Entity('users_role')
 export class Role {
-    @PrimaryGeneratedColumn('increment')
+    @PrimaryGeneratedColumn('uuid')
     role_id: number;
 
     @Column({ unique: true })

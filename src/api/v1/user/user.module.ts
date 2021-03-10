@@ -9,8 +9,6 @@ import { RoleModule } from './role/role.module';
 import { UserService } from './user.service';
 import { UserController } from './user.controller';
 import { User } from './entities/user.entity';
-import { PermissionController } from './permission/permission.controller';
-import { PermissionModule } from './permission/permission.module';
 import { RoleController } from './role/role.controller';
 
 @Module({
@@ -18,9 +16,8 @@ import { RoleController } from './role/role.controller';
     TypeOrmModule.forFeature([User]),
     ConfigModule,
     RoleModule,
-    PermissionModule
   ],
-  controllers: [UserController, PermissionController, RoleController],
+  controllers: [RoleController, UserController],
   providers: [UserService],
   exports: [UserService]
 })
