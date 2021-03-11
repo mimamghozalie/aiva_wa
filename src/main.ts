@@ -5,7 +5,6 @@ import { readFileSync } from 'fs';
 
 // 3rd party module
 import * as compression from 'compression';
-import * as rateLimit from 'express-rate-limit';
 import * as helmet from 'helmet';
 
 // app module
@@ -62,14 +61,6 @@ async function bootstrap() {
        * SECURITY
        */
       app.use(helmet());
-
-      // rate limit
-      app.use(
-        rateLimit({
-          windowMs: 60 * 1000, // 15 minutes
-          max: 100, // limit each IP to 100 requests per windowMs
-        }),
-      );
 
       // When there is a load balancer or reverse proxy between the server and the internet, Express may need to be configured to trust the headers set by the proxy in order to get the correct IP for the end user.
       app.set('trust proxy', 1);

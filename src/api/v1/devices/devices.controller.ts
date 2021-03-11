@@ -3,6 +3,7 @@ import { Controller, Get, Post, Body, Put, Param, Delete, UseGuards, Req, Query 
 // libs
 import { AuthGuard } from '@nestjs/passport';
 import { GetQueryDto } from '@system/dto/querydata.dto';
+import { Throttle } from '@nestjs/throttler';
 
 // apps
 import { DevicesService } from './devices.service';
@@ -15,6 +16,7 @@ import { UpdateDeviceDto } from './dto/update-device.dto';
 export class DevicesController {
   constructor(private readonly devicesService: DevicesService) { }
 
+  @Throttle(5, 10)
   @Post()
   create(@Req() req, @Body() createDeviceDto: CreateDeviceDto) {
     return this.devicesService.create(req.user.id, createDeviceDto);

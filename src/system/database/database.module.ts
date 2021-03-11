@@ -47,4 +47,4 @@ MONGODB == 'true' ? modules.push(MongooseModule.forRootAsync({
   providers: [DatabaseService],
 
 })
-export class DatabaseModule { }
+export class SystemDatabaseModule { }

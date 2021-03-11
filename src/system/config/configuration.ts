@@ -25,4 +25,8 @@ export const Config = Joi.object({
   REDIS_HOST: Joi.string().default('localhost'),
   REDIS_PORT: Joi.number().default(6379),
   REDIS_PASS: Joi.string().optional(),
+
+  // Throttler
+  THROTTLE_TTL: Joi.number().default(60), // the number of seconds that each request will last in storage
+  THROTTLE_LIMIT: Joi.number().default(10), //the maximum number of requests within the TTL limit
 });
