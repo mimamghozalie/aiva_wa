@@ -26,13 +26,15 @@ export class DevicesService {
     const checkLimit = await this.userService.getDeviceLimit(author);
     const myDevices = await this.deviceRepo.count({ where: { author } });
 
-    console.log(myDevices)
+    // cek apakah perangkat sudah melibihi kuota
     if (myDevices < checkLimit.device_limit) {
       return this.deviceRepo.save({
         author: { id: author },
         name: createDeviceDto.name
       })
     } else if (checkLimit.device_limit == 0) {
+
+      // Akun yang tidak memiliki kuota perangkat
       return this.deviceRepo.save({
         author: { id: author },
         name: createDeviceDto.name

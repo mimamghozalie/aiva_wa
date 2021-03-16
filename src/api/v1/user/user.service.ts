@@ -12,12 +12,14 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
 import { GetQueryDto } from '@system/dto/querydata.dto';
+import { RoleService } from './role/role.service';
 
 @Injectable()
 export class UserService {
 
   constructor(
-    @InjectRepository(User) private userRepo: Repository<User>
+    @InjectRepository(User) private userRepo: Repository<User>,
+    private roleService: RoleService
   ) { }
 
 
@@ -32,9 +34,9 @@ export class UserService {
     // Cek apakah sudah ada pengguna
     const checkOwner = await this.userRepo.count();
     if (checkOwner > 0) { return; }
-
-    // Buat akun hak akses Pemilik(owner)
-    this.create(user).then(console.log).catch(console.error);
+    const role = this.roleService.findRoleId('owner')
+    user['role'] = (await role).role_id;
+    this.create(user).then(r => console.log(`Owner Account created.`)).catch(console.error);
   }
 
   async create(createUserDto: Partial<CreateUserDto>) {
@@ -43,7 +45,7 @@ export class UserService {
     !user ? null : new BadRequestException();
 
     createUserDto.password = await hash(createUserDto.password, 12)
-
+    // createUserDto.role = { role_id: createUserDto.role }
     return await this.userRepo.save(createUserDto);
   }
 
@@ -59,7 +61,7 @@ export class UserService {
     const { email, phone } = payload;
     const user = await this.userRepo.findOne(
       { email, status: 'active' },
-      { select: ['id', 'fullname', 'email', 'password', 'status', 'phone'] }
+      { select: ['id', 'fullname', 'email', 'password', 'status', 'phone'], relations: ['role'] }
     );
     if (!user) throw new BadRequestException();
 
@@ -77,7 +79,7 @@ export class UserService {
       order: {
         [orderBy]: sort.toUpperCase(),
       },
-      relations: []
+      relations: ['role']
     };
 
     column ? qParam['select'] = column : ['id', 'fullname', 'email', 'status', 'phone', 'created', 'updated'];
@@ -115,7 +117,7 @@ export class UserService {
   }
 
   async findOne(id: string) {
-    return await this.userRepo.findOne({ id }, { select: ['email', 'fullname', 'phone', 'status'] });
+    return await this.userRepo.findOne({ id }, { select: ['email', 'fullname', 'phone', 'status'], relations: ['role'] });
   }
 
   async update(id: string, updateUserDto: UpdateUserDto) {

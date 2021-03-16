@@ -11,14 +11,15 @@ import { CreateDeviceDto } from './dto/create-device.dto';
 import { UpdateDeviceDto } from './dto/update-device.dto';
 
 
+@Throttle(10, 60)
 @UseGuards(AuthGuard('jwt'))
 @Controller()
 export class DevicesController {
   constructor(private readonly devicesService: DevicesService) { }
 
-  @Throttle(5, 10)
   @Post()
   create(@Req() req, @Body() createDeviceDto: CreateDeviceDto) {
+    console.log(req.user)
     return this.devicesService.create(req.user.id, createDeviceDto);
   }
 

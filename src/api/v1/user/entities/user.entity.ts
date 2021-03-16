@@ -1,6 +1,7 @@
 
 import { Device } from "@api/v1/devices/entities/device.entity";
-import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Role } from "../role/entities/role.entity";
 
 @Entity('users')
 export class User {
@@ -41,6 +42,10 @@ export class User {
     updated: Date;
 
     // Relations
+    @ManyToOne(type => Role, r => r.user)
+    @JoinColumn({ name: 'role' })
+    role: Role;
+
     @OneToMany(type => Device, d => d.author)
     devices: Device;
 

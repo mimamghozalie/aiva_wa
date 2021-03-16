@@ -28,8 +28,8 @@ export class AuthController {
   @Post('login')
   async login(@Body() body: AuthLoginDto) {
     const user = await this.userService.findByLogin(body);
-    const { fullname, phone, email, id } = user;
-    const payload = { fullname, id };
+    const { fullname, phone, id, role } = user;
+    const payload = { fullname, id, role: role.name };
     const token = await this.authService.signPayload(payload);
 
     return {
@@ -41,8 +41,8 @@ export class AuthController {
   @Post('register')
   async register(@Body() body: AuthRegisterDto) {
     const user = await this.userService.create(body);
-    const { fullname, phone, id } = user;
-    const payload = { fullname, id };
+    const { fullname, phone, id, role } = user;
+    const payload = { fullname, id, role: role.name };
     const token = await this.authService.signPayload(payload);
 
     return {
