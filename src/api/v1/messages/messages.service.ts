@@ -43,9 +43,6 @@ export class MessagesService {
     column ? qParam['select'] = column : [];
 
     let response;
-
-    console.log(qParam)
-
     if (filter) {
       const field = filter.split(':');
 

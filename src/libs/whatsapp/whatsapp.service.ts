@@ -1,4 +1,4 @@
-import { Injectable, Logger, LoggerService } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Observable, BehaviorSubject, Subject, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import {
@@ -17,10 +17,12 @@ import { pathBrowser } from './utils/pathBrowser';
 
 const { Client, Chat, MessageMedia, Location } = require('whatsapp-web.js');
 
-const logger = new Logger('WhatsApp', true)
 
 @Injectable()
 export class WhatsappService {
+  logger = new Logger(WhatsappService.name, true)
+
+
   private WAConnection$ = new BehaviorSubject<WAStatus[]>([]);
   public newAuth = new Subject<newAuth>();
 
@@ -51,16 +53,16 @@ export class WhatsappService {
         });
         WA.initialize();
 
-        logger.debug(`cek device: ${deviceId}`)
+        this.logger.debug(`cek device: ${deviceId}`)
         const connection = this.WAConnection$.getValue();
         if (connection.find(item => item.deviceId == deviceId) !== undefined) {
           const msg = 'Device already have connection.';
-          logger.debug(msg);
+          this.logger.debug(msg);
 
           // Lempar eror koneksi sudah ada
           return reject({ error: true, message: msg });
         }
-        logger.debug(`total Whatsapp connection: ${connection.length}`)
+        this.logger.debug(`total Whatsapp connection: ${connection.length}`)
         const user: WAStatus = {
           deviceId,
           connection: WA,
@@ -73,7 +75,7 @@ export class WhatsappService {
 
         WA.on('authenticated', session => {
 
-          logger.debug(session, 'AUTHENTICATED');
+          this.logger.debug(session, 'AUTHENTICATED');
           connection.forEach((row, index, conn) => {
             if (row.deviceId === deviceId) {
               row.session = session;
@@ -90,7 +92,7 @@ export class WhatsappService {
         });
 
         WA.on('qr', async qr => {
-          logger.debug('get qr code', 'QR CODE');
+          this.logger.debug('get qr code', 'QR CODE');
           connection.forEach((row, index, conn) => {
             if (row.deviceId === deviceId) {
               row.qrcode = qr;
@@ -152,8 +154,8 @@ export class WhatsappService {
              * Receive message
              */
 
-            logger.debug('receive message')
-            logger.log(`${msg.from}: ${msg.body}`)
+            this.logger.debug('receive message')
+            this.logger.log(`${msg.from}: ${msg.body}`)
             const sender = await msg.getContact();
 
             this.onMessage.next({
@@ -175,7 +177,7 @@ export class WhatsappService {
           /**
            * Receive message status
            */
-          logger.log(`${msg.id.id}: ${ack}`, 'Status MSG')
+          this.logger.log(`${msg.id.id}: ${ack}`, 'Status MSG')
 
           /*
               == ACK VALUES ==
@@ -195,14 +197,14 @@ export class WhatsappService {
         });
 
         WA.on('disconnected', async reason => {
-          logger.debug(`Device disconnect: ${reason}`)
+          this.logger.debug(`Device disconnect: ${reason}`)
           const data = this.WAConnection$.getValue();
           data.forEach((row, index, arr) => {
             console.log(reason);
           });
         });
       } catch (error) {
-        logger.error(`Fatal error Whatsapp Connection ${error.message}`)
+        this.logger.error(`Fatal error Whatsapp Connection ${error.message}`)
         reject(error.message);
       }
     });
@@ -252,7 +254,7 @@ export class WhatsappService {
   getConnection(deviceId: string): Observable<WAMethod> {
     return this.WAConnection$.pipe(
       map(users => {
-        logger.debug(`Get connection: ${deviceId}`)
+        this.logger.debug(`Get connection: ${deviceId}`)
         return users.find(u => u.deviceId === deviceId).connection || null;
       }),
     );
@@ -266,21 +268,21 @@ export class WhatsappService {
 
       if (instance !== -1) {
         // instance ada
-        logger.debug('Instance found')
-        logger.debug('Destroying instance...')
+        this.logger.debug('Instance found')
+        this.logger.debug('Destroying instance...')
         await connection[instance].connection.destroy()
-        logger.debug('Instance Destroyed.')
+        this.logger.debug('Instance Destroyed.')
 
         try {
-          logger.log('Remove Instance')
+          this.logger.log('Remove Instance')
           connection.splice(instance, 1)
-          logger.log('Instance removed')
-          logger.debug('Update Instance Connection')
+          this.logger.log('Instance removed')
+          this.logger.debug('Update Instance Connection')
           this.WAConnection$.next(connection);
 
           return "Instance Removed"
         } catch (error) {
-          logger.error(`Error destroy instance: ${error.message}`)
+          this.logger.error(`Error destroy instance: ${error.message}`)
           return Promise.reject({ error: true, message: 'Error destroy instance' })
         }
       }
