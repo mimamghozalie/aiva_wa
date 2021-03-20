@@ -9,7 +9,6 @@ import { ResponseInterceptor } from '@api/middleware/response.interceptor';
 import { AboutModule } from './about/about.module';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
-// import { DevicesModule } from './devices/devices.module';
 import { DevicesModule } from './devices/devices.module';
 import { MessagesModule } from './messages/messages.module';
 

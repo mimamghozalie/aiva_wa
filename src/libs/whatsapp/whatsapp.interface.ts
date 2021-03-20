@@ -1,7 +1,8 @@
 export interface MessageReceived {
   body: string;
   data: any;
-  userId: string;
+  userId?: string;
+  deviceId: string;
   author: string;
   chatId: string;
   fromMe: boolean;
@@ -17,7 +18,7 @@ export interface MessageAck {
   messageId: string;
   ack: '-1' | '0' | '1' | '2' | '3' | '4';
   msg: any;
-  userId: string;
+  deviceId: string;
 }
 
 export interface Remote {
@@ -56,7 +57,7 @@ export interface WhatsAppResponse {
 }
 
 export interface WAStatus {
-  id: string;
+  deviceId: string;
   number?: string;
   connection?: WAMethod;
   qrcode?: string;
@@ -81,13 +82,13 @@ export interface WAMethod {
 }
 
 export interface newAuth {
-  id: string;
+  deviceId: string;
   session: string;
   status: 'pairing' | 'connected' | 'offline'
 }
 
 export interface sendMessageParam {
-  userId: string;
+  deviceId: string;
   phone: string;
   mediaPath: string;
   type: 'image' | 'video';

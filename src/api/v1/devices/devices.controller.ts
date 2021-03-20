@@ -5,6 +5,9 @@ import { AuthGuard } from '@nestjs/passport';
 import { GetQueryDto } from '@system/dto/querydata.dto';
 import { Throttle } from '@nestjs/throttler';
 
+// system
+import { User } from '@system/decorators/user.decorator';
+
 // apps
 import { DevicesService } from './devices.service';
 import { CreateDeviceDto } from './dto/create-device.dto';
@@ -17,10 +20,31 @@ import { UpdateDeviceDto } from './dto/update-device.dto';
 export class DevicesController {
   constructor(private readonly devicesService: DevicesService) { }
 
+  @Get('instance')
+  isntance() {
+    return this.devicesService.instance();
+  }
+
+  @Get(':id/pair')
+  pairDevice(@User() user, @Param('id') id: string) {
+    return this.devicesService.pair(id);
+  }
+
+  @Get(':id/destroy')
+  destroyDevice(@User() user, @Param('id') id: string) {
+    return this.devicesService.destroy(id);
+  }
+
+  /**
+   * Devices
+   * @param req 
+   * @param createDeviceDto 
+   * @returns 
+   */
+
   @Post()
-  create(@Req() req, @Body() createDeviceDto: CreateDeviceDto) {
-    console.log(req.user)
-    return this.devicesService.create(req.user.id, createDeviceDto);
+  create(@User() user, @Body() createDeviceDto: CreateDeviceDto) {
+    return this.devicesService.create(user.id, createDeviceDto);
   }
 
   @Get()
@@ -42,4 +66,6 @@ export class DevicesController {
   remove(@Param('id') id: string) {
     return this.devicesService.remove(id);
   }
+
+
 }

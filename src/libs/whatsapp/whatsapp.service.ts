@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, LoggerService } from '@nestjs/common';
 import { Observable, BehaviorSubject, Subject, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import {
@@ -12,9 +12,12 @@ import {
   MessageResponse,
 } from './whatsapp.interface';
 import * as PATH from 'path';
-import { writeFile, existsSync, mkdirSync } from 'fs';
+import { writeFile, existsSync, mkdirSync, truncate } from 'fs';
+import { pathBrowser } from './utils/pathBrowser';
 
 const { Client, Chat, MessageMedia, Location } = require('whatsapp-web.js');
+
+const logger = new Logger('WhatsApp', true)
 
 @Injectable()
 export class WhatsappService {
@@ -23,16 +26,17 @@ export class WhatsappService {
 
   public onMessage = new Subject<MessageReceived>();
   public onMessageAck = new Subject<MessageAck>();
+
+
   constructor() { }
 
   /**
    * init Whatsapp instance
-   * @param userId @unique
+   * @param deviceId @unique
    */
-  async initInstance(userId: string, session?: any): Promise<string> {
-    return new Promise((res, rej) => {
+  async initInstance(deviceId: string, session?: any): Promise<string | any> {
+    return new Promise((resolve, reject) => {
       try {
-        const pathWin = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
         const WA = new Client({
           puppeteer: {
             headless: true,
@@ -41,23 +45,37 @@ export class WhatsappService {
               '--disable-setuid-sandbox',
               '--unhandled-rejections=strict',
             ],
-            executablePath: pathWin,
+            executablePath: pathBrowser(process.platform),
           },
           session,
         });
         WA.initialize();
+
+        logger.debug(`cek device: ${deviceId}`)
         const connection = this.WAConnection$.getValue();
+        if (connection.find(item => item.deviceId == deviceId) !== undefined) {
+          const msg = 'Device already have connection.';
+          logger.debug(msg);
+
+          // Lempar eror koneksi sudah ada
+          return reject({ error: true, message: msg });
+        }
+        logger.debug(`total Whatsapp connection: ${connection.length}`)
         const user: WAStatus = {
-          id: userId,
+          deviceId,
           connection: WA,
         };
+
+        // tambah koneksi
         connection.push(user);
         this.WAConnection$.next(connection);
-        WA.on('authenticated', session => {
-          console.log('authed', session);
 
+
+        WA.on('authenticated', session => {
+
+          logger.debug(session, 'AUTHENTICATED');
           connection.forEach((row, index, conn) => {
-            if (row.id === userId) {
+            if (row.deviceId === deviceId) {
               row.session = session;
 
               conn[index] = row;
@@ -65,22 +83,22 @@ export class WhatsappService {
           });
 
           this.newAuth.next({
-            id: userId,
+            deviceId,
             session: session,
             status: 'connected'
           });
         });
 
         WA.on('qr', async qr => {
-          console.log('update qr');
+          logger.debug('get qr code', 'QR CODE');
           connection.forEach((row, index, conn) => {
-            if (row.id === userId) {
+            if (row.deviceId === deviceId) {
               row.qrcode = qr;
 
               conn[index] = row;
             }
           });
-          res(qr);
+          resolve(qr);
         });
 
         WA.on('message', async msg => {
@@ -100,7 +118,7 @@ export class WhatsappService {
             }
 
             const fileType = mimeType.split('/').pop();
-            const dir = `storage/projects/${userId}/${mediaType}/${date
+            const dir = `storage/projects/${deviceId}/${mediaType}/${date
               .getFullYear()
               .toString() +
               (date.getMonth() + 1)}`;
@@ -119,7 +137,7 @@ export class WhatsappService {
             this.onMessage.next({
               data: msg,
               body: msg.body,
-              userId,
+              deviceId,
               chatId: msg.to,
               msgId: msg.id.id,
               fromMe: msg.fromMe,
@@ -130,13 +148,18 @@ export class WhatsappService {
             });
             // }
           } else if (msg.body != '') {
+            /**
+             * Receive message
+             */
+
+            logger.debug('receive message')
+            logger.log(`${msg.from}: ${msg.body}`)
             const sender = await msg.getContact();
-            // jika pesan masuk tidak kosong
 
             this.onMessage.next({
               data: msg,
               body: msg.body,
-              userId,
+              deviceId,
               chatId: msg.to,
               fromMe: msg.fromMe,
               type: msg.type,
@@ -149,6 +172,11 @@ export class WhatsappService {
         });
 
         WA.on('message_ack', (msg, ack) => {
+          /**
+           * Receive message status
+           */
+          logger.log(`${msg.id.id}: ${ack}`, 'Status MSG')
+
           /*
               == ACK VALUES ==
               ACK_ERROR: -1
@@ -162,20 +190,20 @@ export class WhatsappService {
             messageId: msg.id.id,
             ack: ack,
             msg,
-            userId,
+            deviceId,
           });
         });
 
         WA.on('disconnected', async reason => {
-          console.log(reason);
+          logger.debug(`Device disconnect: ${reason}`)
           const data = this.WAConnection$.getValue();
           data.forEach((row, index, arr) => {
             console.log(reason);
           });
         });
       } catch (error) {
-        console.error(`Fatal error Whatsapp Connection ${error.message}`)
-        rej(error.message);
+        logger.error(`Fatal error Whatsapp Connection ${error.message}`)
+        reject(error.message);
       }
     });
   }
@@ -186,7 +214,7 @@ export class WhatsappService {
         resolve(
           res.map(r => {
             return {
-              id: r.id,
+              id: r.deviceId,
               session: r.session,
             };
           }),
@@ -197,9 +225,9 @@ export class WhatsappService {
 
   /**
    * get Qr Code by initialized Instance
-   * @param userId @unique
+   * @param deviceId @unique
    */
-  async getQrCode(userId): Promise<string> {
+  async getQrCode(deviceId): Promise<string> {
     return new Promise((resolve, reject) => {
       console.log('called');
       const instance = this.WAConnection$.getValue();
@@ -207,7 +235,7 @@ export class WhatsappService {
         resolve('error');
       }
       instance.forEach((row, index, arr) => {
-        if (row.id === userId) {
+        if (row.deviceId === deviceId) {
           console.log('found');
           return resolve(row.qrcode);
         }
@@ -224,35 +252,41 @@ export class WhatsappService {
   getConnection(deviceId: string): Observable<WAMethod> {
     return this.WAConnection$.pipe(
       map(users => {
-        // console.log(users);
-        // console.log(users.find(u => u.id === deviceId).connection)
-        return users.find(u => u.id === deviceId).connection;
+        logger.debug(`Get connection: ${deviceId}`)
+        return users.find(u => u.deviceId === deviceId).connection || null;
       }),
     );
   }
 
-  async instanceDestroy(deviceId: string): Promise<void> {
-    try {
-      const instance = this.WAConnection$.getValue();
+  async instanceDestroy(deviceId: string): Promise<string | any> {
+    return new Promise(async (resolve, reject) => {
+      const connection = this.WAConnection$.getValue();
 
-      instance.forEach(async (row, index) => {
-        if (row.id == deviceId) {
-          try {
-            const connection = row.connection;
-            // await connection.logout();
-            await connection.destroy();
+      const instance = connection.findIndex(i => i.deviceId == deviceId)
 
-            instance.splice(index, 1);
-          } catch (error) {
-            console.error('instance destroy catch', error);
-          }
+      if (instance !== -1) {
+        // instance ada
+        logger.debug('Instance found')
+        logger.debug('Destroying instance...')
+        await connection[instance].connection.destroy()
+        logger.debug('Instance Destroyed.')
+
+        try {
+          logger.log('Remove Instance')
+          connection.splice(instance, 1)
+          logger.log('Instance removed')
+          logger.debug('Update Instance Connection')
+          this.WAConnection$.next(connection);
+
+          return "Instance Removed"
+        } catch (error) {
+          logger.error(`Error destroy instance: ${error.message}`)
+          return Promise.reject({ error: true, message: 'Error destroy instance' })
         }
-      });
+      }
+      return reject({ error: true, message: 'instance not found' })
 
-      this.WAConnection$.next(instance);
-    } catch (error) {
-      console.log('error close', error);
-    }
+    })
   }
 
   async sendMessage(
@@ -286,9 +320,9 @@ export class WhatsappService {
   }
 
   async sendMedia(param: sendMessageParam) {
-    const { userId, mediaPath, phone, caption, type } = param;
+    const { deviceId, mediaPath, phone, caption, type } = param;
     return new Promise((resolve, reject) => {
-      this.getConnection(userId).subscribe((res: any) => {
+      this.getConnection(deviceId).subscribe((res: any) => {
         if (!res) {
           return resolve({
             error: true,
@@ -313,13 +347,13 @@ export class WhatsappService {
     });
   }
 
-  async getProfile(userId) {
-    return this.getConnection(userId).pipe(map((res: any) => res.info));
+  async getProfile(deviceId) {
+    return this.getConnection(deviceId).pipe(map((res: any) => res.info));
   }
 
-  async getContacts(userId: string, contactId?: string) {
+  async getContacts(deviceId: string, contactId?: string) {
     return new Promise(async (resolve, reject) => {
-      this.getConnection(userId).subscribe((res: any) => {
+      this.getConnection(deviceId).subscribe((res: any) => {
         if (!res) {
           return resolve({
             error: true,
@@ -347,9 +381,9 @@ export class WhatsappService {
     });
   }
 
-  async getChat(userId) {
+  async getChat(deviceId) {
     return new Promise((resolve, reject) => {
-      this.getConnection(userId).subscribe(async res => {
+      this.getConnection(deviceId).subscribe(async res => {
         if (!res) {
           return resolve({
             error: true,
@@ -362,10 +396,10 @@ export class WhatsappService {
     });
   }
 
-  async getChatById(userId, phone, limit?: number): Promise<WhatsAppResponse> {
+  async getChatById(deviceId, phone, limit?: number): Promise<WhatsAppResponse> {
     return new Promise(async (resolve, reject) => {
-      console.log(phone, userId);
-      this.getConnection(userId).subscribe(async res => {
+      console.log(phone, deviceId);
+      this.getConnection(deviceId).subscribe(async res => {
         if (!res) {
           return resolve({
             error: true,
@@ -385,7 +419,7 @@ export class WhatsappService {
           const chat = await data.fetchMessages({ limit });
           chat.map(r => {
             if (r.hasMedia) {
-              r.imageUrl = `storage/projects/${userId}/${r.id.id}.png`;
+              r.imageUrl = `storage/projects/${deviceId}/${r.id.id}.png`;
               return r;
             }
           });

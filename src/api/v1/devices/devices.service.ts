@@ -12,6 +12,7 @@ import { UserService } from '../user/user.service';
 import { CreateDeviceDto } from './dto/create-device.dto';
 import { UpdateDeviceDto } from './dto/update-device.dto';
 import { Device } from './entities/device.entity';
+import { WhatsappService } from '@libs/whatsapp/whatsapp.service';
 
 
 @Injectable()
@@ -19,7 +20,8 @@ export class DevicesService {
 
   constructor(
     private userService: UserService,
-    @InjectRepository(Device) private deviceRepo: Repository<Device>
+    @InjectRepository(Device) private deviceRepo: Repository<Device>,
+    private whatsappService: WhatsappService
   ) { }
 
   async create(author: string, createDeviceDto: CreateDeviceDto) {
@@ -101,5 +103,18 @@ export class DevicesService {
 
   async remove(id: string) {
     return await this.deviceRepo.delete(id)
+  }
+
+  // Whatsapp Connection
+  instance() {
+    return this.whatsappService.getTotalInstance()
+  }
+
+  pair(deviceId: string) {
+    return this.whatsappService.initInstance(deviceId)
+  }
+
+  destroy(deviceId: string): any {
+    return this.whatsappService.instanceDestroy(deviceId);
   }
 }
