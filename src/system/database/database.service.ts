@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { getConnection } from 'typeorm';
 import { exec } from 'child_process';
-import * as dayjs from 'dayjs';
 
 @Injectable()
 export class DatabaseService {

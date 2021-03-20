@@ -68,8 +68,8 @@ async function bootstrap() {
 
     await app.listen(PORT);
     Logger.log(
-      `[Aiva] running on http${SSL == 'TRUE' ? 's' : ''}://localhost:${PORT}`,
-      'Bootstrap',
+      `[${process.env.NODE_ENV.toUpperCase()}] run at http${SSL == 'TRUE' ? 's' : ''}://localhost:${PORT}`,
+      `${process.env.APP_NAME}`,
     );
   } catch (error) {
     Logger.error(error.message, error.stack, 'Bootstrap');
