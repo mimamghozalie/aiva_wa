@@ -1,8 +1,9 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, forwardRef, Inject, Injectable } from '@nestjs/common';
 
 // libs
 import { Like, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
+import { randomBytes } from 'crypto';
 
 // system
 import { GetQueryDto } from '@system/dto/querydata.dto';
@@ -13,6 +14,7 @@ import { CreateDeviceDto } from './dto/create-device.dto';
 import { UpdateDeviceDto } from './dto/update-device.dto';
 import { Device } from './entities/device.entity';
 import { WhatsappService } from '@libs/whatsapp/whatsapp.service';
+import { MessagesService } from '../messages/messages.service';
 
 
 @Injectable()
@@ -21,29 +23,35 @@ export class DevicesService {
   constructor(
     private userService: UserService,
     @InjectRepository(Device) private deviceRepo: Repository<Device>,
-    private whatsappService: WhatsappService
+    private whatsappService: WhatsappService,
+    @Inject(forwardRef(() => MessagesService))
+    private messageService: MessagesService
   ) { }
 
   async create(author: string, createDeviceDto: CreateDeviceDto) {
     const checkLimit = await this.userService.getDeviceLimit(author);
     const myDevices = await this.deviceRepo.count({ where: { author } });
 
+    const data = {
+      author: { id: author },
+      name: createDeviceDto.name,
+      token: randomBytes(16).toString('hex')
+    }
+
     // cek apakah perangkat sudah melibihi kuota
     if (myDevices < checkLimit.device_limit) {
-      return this.deviceRepo.save({
-        author: { id: author },
-        name: createDeviceDto.name
-      })
+      return this.deviceRepo.save(data)
     } else if (checkLimit.device_limit == 0) {
 
       // Akun yang tidak memiliki kuota perangkat
-      return this.deviceRepo.save({
-        author: { id: author },
-        name: createDeviceDto.name
-      })
+      return this.deviceRepo.save(data)
     } else {
       throw new BadRequestException('Payment Required.')
     }
+  }
+
+  findMessages(deviceId: string, query: GetQueryDto) {
+    return this.messageService.findAll(deviceId, query);
   }
 
   async findAll(getQueryDto: GetQueryDto) {
@@ -60,8 +68,6 @@ export class DevicesService {
     column ? qParam['select'] = column : ['deviceId', 'name', 'created', 'updated'];
 
     let response;
-
-    console.log(qParam)
 
     if (filter) {
       const field = filter.split(':');
@@ -91,6 +97,10 @@ export class DevicesService {
       total: response[1],
       statusCode: 200,
     };
+  }
+
+  async findByToken(token: string) {
+    return await this.deviceRepo.findOne({ where: { token } })
   }
 
   async findOne(id: string) {

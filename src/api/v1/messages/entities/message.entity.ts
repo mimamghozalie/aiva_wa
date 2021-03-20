@@ -23,6 +23,17 @@ export class Message {
     })
     type: MessageType;
 
+    @Column({
+        type: 'text',
+        nullable: true
+    })
+    body: any;
+
+    @Column({
+        default: 0
+    })
+    status: number;
+
     @CreateDateColumn()
     created: Date;
 

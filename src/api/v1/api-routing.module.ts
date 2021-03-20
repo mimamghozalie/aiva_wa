@@ -33,7 +33,7 @@ export const routes: Routes = [
         module: DevicesModule
       },
       {
-        path: 'messages',
+        path: 'message',
         module: MessagesModule
       }
     ],

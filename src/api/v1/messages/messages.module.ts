@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 
 // libs
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -7,10 +7,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { MessagesService } from './messages.service';
 import { MessagesController } from './messages.controller';
 import { Message } from './entities/message.entity';
+import { DevicesModule } from '../devices/devices.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Message])],
+  imports: [TypeOrmModule.forFeature([Message]), forwardRef(() => DevicesModule)],
   controllers: [MessagesController],
-  providers: [MessagesService]
+  providers: [MessagesService],
+  exports: [MessagesService]
 })
 export class MessagesModule { }

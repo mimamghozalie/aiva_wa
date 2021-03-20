@@ -52,6 +52,11 @@ export class DevicesController {
     return this.devicesService.findAll(query);
   }
 
+  @Get(':id/messages')
+  findMessage(@Param('id') id: string, @Query() query: GetQueryDto) {
+    return this.devicesService.findMessages(id, query);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.devicesService.findOne(id);

@@ -22,7 +22,7 @@ export class Device {
     @Column('text', {
         nullable: true
     })
-    token: string;
+    session: string;
 
     @Column('boolean', {
         default: true
@@ -32,7 +32,7 @@ export class Device {
     @Column('text', {
         nullable: true
     })
-    accessToken: string;
+    token: string;
 
     @Column('text', {
         nullable: true,
