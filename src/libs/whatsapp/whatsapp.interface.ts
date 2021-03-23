@@ -62,6 +62,7 @@ export interface WAStatus {
   connection?: WAMethod;
   qrcode?: string;
   session?: any;
+  status?: string;
 }
 
 export interface WAMethod {

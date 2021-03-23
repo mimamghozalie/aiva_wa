@@ -23,11 +23,11 @@ export class WhatsappService {
   logger = new Logger(WhatsappService.name, true)
 
 
-  private WAConnection$ = new BehaviorSubject<WAStatus[]>([]);
-  public newAuth = new Subject<newAuth>();
+  private instances$ = new BehaviorSubject<WAStatus[]>([]);
+  public readonly instance = new Subject<newAuth>();
 
-  public onMessage = new Subject<MessageReceived>();
-  public onMessageAck = new Subject<MessageAck>();
+  public readonly onMessage = new Subject<MessageReceived>();
+  public readonly onMessageAck = new Subject<MessageAck>();
 
 
   constructor() { }
@@ -54,37 +54,41 @@ export class WhatsappService {
         WA.initialize();
 
         this.logger.debug(`cek device: ${deviceId}`)
-        const connection = this.WAConnection$.getValue();
-        if (connection.find(item => item.deviceId == deviceId) !== undefined) {
-          const msg = 'Device already have connection.';
-          this.logger.debug(msg);
+        const instances = this.instances$.getValue();
+        if (instances.find(item => item.deviceId == deviceId) !== undefined) {
+          this.logger.log(`Instance already: ${deviceId}`);
 
           // Lempar eror koneksi sudah ada
-          return reject({ error: true, message: msg });
+          return reject({ error: true, message: "Instance is Available." });
         }
-        this.logger.debug(`total Whatsapp connection: ${connection.length}`)
-        const user: WAStatus = {
+
+        /**
+         * Buat instance baru
+         */
+        this.logger.debug(`Total instance: ${instances.length}`)
+        const newInstance: WAStatus = {
           deviceId,
           connection: WA,
         };
 
         // tambah koneksi
-        connection.push(user);
-        this.WAConnection$.next(connection);
+        instances.push(newInstance);
+        this.instances$.next(instances);
 
 
         WA.on('authenticated', session => {
 
-          this.logger.debug(session, 'AUTHENTICATED');
-          connection.forEach((row, index, conn) => {
+          this.logger.debug(`AUTH ok : ${deviceId}`);
+          instances.forEach((row, index, conn) => {
             if (row.deviceId === deviceId) {
               row.session = session;
-
+              row.status = 'connected';
               conn[index] = row;
             }
           });
-
-          this.newAuth.next({
+          this.instances$.next(instances)
+          // 
+          this.instance.next({
             deviceId,
             session: session,
             status: 'connected'
@@ -92,14 +96,7 @@ export class WhatsappService {
         });
 
         WA.on('qr', async qr => {
-          this.logger.debug('get qr code', 'QR CODE');
-          connection.forEach((row, index, conn) => {
-            if (row.deviceId === deviceId) {
-              row.qrcode = qr;
-
-              conn[index] = row;
-            }
-          });
+          this.logger.debug(`GET qr code: ${deviceId}`);
           resolve(qr);
         });
 
@@ -198,7 +195,7 @@ export class WhatsappService {
 
         WA.on('disconnected', async reason => {
           this.logger.debug(`Device disconnect: ${reason}`)
-          const data = this.WAConnection$.getValue();
+          const data = this.instances$.getValue();
           data.forEach((row, index, arr) => {
             console.log(reason);
           });
@@ -211,82 +208,68 @@ export class WhatsappService {
   }
 
   async getTotalInstance(): Promise<any> {
-    return new Promise(resolve => {
-      this.WAConnection$.subscribe(res => {
-        resolve(
-          res.map(r => {
-            return {
-              id: r.deviceId,
-              session: r.session,
-            };
-          }),
-        );
-      });
-    });
+    return this.instances$.getValue()
   }
 
   /**
-   * get Qr Code by initialized Instance
-   * @param deviceId @unique
-   */
-  async getQrCode(deviceId): Promise<string> {
-    return new Promise((resolve, reject) => {
-      console.log('called');
-      const instance = this.WAConnection$.getValue();
-      if (instance.length < 1) {
-        resolve('error');
-      }
-      instance.forEach((row, index, arr) => {
-        if (row.deviceId === deviceId) {
-          console.log('found');
-          return resolve(row.qrcode);
+ * Get Instance Connection
+ * @param userId @unique
+ */
+  getConnection(deviceId): Observable<WAMethod> {
+    return this.instances$.pipe(
+      map(users => {
+        const user = users.find(user => user.deviceId === deviceId);
+        if (user) {
+          return user.connection;
         }
-        console.log('not found');
-        resolve('error');
-      });
-    });
+        return null;
+      }),
+    );
   }
 
   /**
    * Get Instance Connection
    * @param deviceId @unique
    */
-  getConnection(deviceId: string): Observable<WAMethod> {
-    return this.WAConnection$.pipe(
-      map(users => {
-        this.logger.debug(`Get connection: ${deviceId}`)
-        return users.find(u => u.deviceId === deviceId).connection || null;
-      }),
-    );
+  getInstance(deviceId?: string): WAStatus | WAStatus[] | null {
+    if (deviceId) {
+      return this.instances$.getValue().find(i => i.deviceId === deviceId) || null;
+    }
+    return this.instances$.getValue();
+    // return this.WAConnection$.pipe(
+    //   map(users => {
+    //     this.logger.debug(`Get connection: ${deviceId}`)
+    //     return users.find(u => u.deviceId === deviceId)?.connection || null;
+    //   }),
+    // );
   }
 
   async instanceDestroy(deviceId: string): Promise<string | any> {
     return new Promise(async (resolve, reject) => {
-      const connection = this.WAConnection$.getValue();
 
-      const instance = connection.findIndex(i => i.deviceId == deviceId)
+      const instance = this.getInstance(deviceId)
+      console.log(instance)
 
-      if (instance !== -1) {
+      if (instance === null) {
         // instance ada
-        this.logger.debug('Instance found')
-        this.logger.debug('Destroying instance...')
-        await connection[instance].connection.destroy()
-        this.logger.debug('Instance Destroyed.')
+        this.logger.log('Destroying instance...')
+        // await instance?.connection?.destroy()
+        // this.logger.debug('Instance Destroyed.')
 
-        try {
-          this.logger.log('Remove Instance')
-          connection.splice(instance, 1)
-          this.logger.log('Instance removed')
-          this.logger.debug('Update Instance Connection')
-          this.WAConnection$.next(connection);
+        // try {
+        // this.logger.log('Remove Instance')
+        //   this.instances$.splice(instance, 1)
+        //   this.logger.log('Instance removed')
+        //   this.logger.debug('Update Instance Connection')
+        //   this.WAConnection$.next(connection);
 
-          return "Instance Removed"
-        } catch (error) {
-          this.logger.error(`Error destroy instance: ${error.message}`)
-          return Promise.reject({ error: true, message: 'Error destroy instance' })
-        }
+        //   resolve("Instance Removed")
+        // } catch (error) {
+        //   this.logger.error(`Error destroy instance: ${error.message}`)
+        //   reject({ error: true, message: 'Error destroy instance' })
+        // }
       }
-      return reject({ error: true, message: 'instance not found' })
+      reject({ error: true, message: 'instance not found' })
 
     })
   }
@@ -299,6 +282,7 @@ export class WhatsappService {
     return new Promise(async (resolve, reject) => {
       try {
         return this.getConnection(deviceId).subscribe(async (client: any) => {
+          console.log(`kirim pesan ke ${deviceId}`)
           if (!client) {
             resolve({
               message: 'Device Not Connected',
@@ -321,118 +305,119 @@ export class WhatsappService {
     })
   }
 
-  async sendMedia(param: sendMessageParam) {
-    const { deviceId, mediaPath, phone, caption, type } = param;
-    return new Promise((resolve, reject) => {
-      this.getConnection(deviceId).subscribe((res: any) => {
-        if (!res) {
-          return resolve({
-            error: true,
-            message: 'Connection Refused',
-          });
-        }
+  // async sendMedia(param: sendMessageParam) {
+  //   const { deviceId, mediaPath, phone, caption, type } = param;
+  //   return new Promise((resolve, reject) => {
+  //     this.getConnection(deviceId).subscribe((res: any) => {
+  //       if (!res) {
+  //         return resolve({
+  //           error: true,
+  //           message: 'Connection Refused',
+  //         });
+  //       }
 
-        let media = MessageMedia.fromFilePath(
-          PATH.resolve(process.cwd(), mediaPath),
-        );
-        res
-          .sendMessage(phone, media)
-          .then(wares => {
-            console.log(wares);
-            resolve(wares);
-          })
-          .catch(err => {
-            console.log(err);
-            resolve(err);
-          });
-      });
-    });
-  }
+  //       let media = MessageMedia.fromFilePath(
+  //         PATH.resolve(process.cwd(), mediaPath),
+  //       );
+  //       res
+  //         .sendMessage(phone, media)
+  //         .then(wares => {
+  //           console.log(wares);
+  //           resolve(wares);
+  //         })
+  //         .catch(err => {
+  //           console.log(err);
+  //           resolve(err);
+  //         });
+  //     });
+  //   });
+  // }
 
-  async getProfile(deviceId) {
-    return this.getConnection(deviceId).pipe(map((res: any) => res.info));
-  }
+  // async getProfile(deviceId) {
+  //   const instance = this.getInstance(deviceId);
+  //   return instance?.connection.info()
+  // }
 
-  async getContacts(deviceId: string, contactId?: string) {
-    return new Promise(async (resolve, reject) => {
-      this.getConnection(deviceId).subscribe((res: any) => {
-        if (!res) {
-          return resolve({
-            error: true,
-            message: 'Connection Refused',
-          });
-        }
+  // async getContacts(deviceId: string, contactId?: string) {
+  //   return new Promise(async (resolve, reject) => {
+  //     this.getConnection(deviceId).subscribe((res: any) => {
+  //       if (!res) {
+  //         return resolve({
+  //           error: true,
+  //           message: 'Connection Refused',
+  //         });
+  //       }
 
-        if (contactId) {
-          return res
-            .getContactById(contactId)
-            .then(async res => {
-              resolve({
-                ...res,
-                picture: await res.getProfilePicUrl(),
-              });
-            })
-            .catch(err => {
-              resolve({ error: true, err });
-            });
-        }
-        res.getContacts().then(contacts => {
-          resolve(contacts);
-        });
-      });
-    });
-  }
+  //       if (contactId) {
+  //         return res
+  //           .getContactById(contactId)
+  //           .then(async res => {
+  //             resolve({
+  //               ...res,
+  //               picture: await res.getProfilePicUrl(),
+  //             });
+  //           })
+  //           .catch(err => {
+  //             resolve({ error: true, err });
+  //           });
+  //       }
+  //       res.getContacts().then(contacts => {
+  //         resolve(contacts);
+  //       });
+  //     });
+  //   });
+  // }
 
-  async getChat(deviceId) {
-    return new Promise((resolve, reject) => {
-      this.getConnection(deviceId).subscribe(async res => {
-        if (!res) {
-          return resolve({
-            error: true,
-            message: 'Connection Refused',
-          });
-        }
-        const data = await res.getChats();
-        resolve(data);
-      });
-    });
-  }
+  // async getChat(deviceId) {
+  //   return new Promise((resolve, reject) => {
+  //     this.getConnection(deviceId).subscribe(async res => {
+  //       if (!res) {
+  //         return resolve({
+  //           error: true,
+  //           message: 'Connection Refused',
+  //         });
+  //       }
+  //       const data = await res.getChats();
+  //       resolve(data);
+  //     });
+  //   });
+  // }
 
-  async getChatById(deviceId, phone, limit?: number): Promise<WhatsAppResponse> {
-    return new Promise(async (resolve, reject) => {
-      console.log(phone, deviceId);
-      this.getConnection(deviceId).subscribe(async res => {
-        if (!res) {
-          return resolve({
-            error: true,
-            message: 'Connection Refused',
-          });
-        }
+  // async getChatById(deviceId, phone, limit?: number): Promise<WhatsAppResponse> {
+  //   return new Promise(async (resolve, reject) => {
+  //     console.log(phone, deviceId);
+  //     this.getConnection(deviceId).subscribe(async res => {
+  //       if (!res) {
+  //         return resolve({
+  //           error: true,
+  //           message: 'Connection Refused',
+  //         });
+  //       }
 
-        try {
-          const data: any = await res.getChatById(phone);
-          if (!data) {
-            return resolve({
-              error: true,
-              message: 'Phone not registered.',
-            });
-          }
+  //       try {
+  //         const data: any = await res.getChatById(phone);
+  //         if (!data) {
+  //           return resolve({
+  //             error: true,
+  //             message: 'Phone not registered.',
+  //           });
+  //         }
 
-          const chat = await data.fetchMessages({ limit });
-          chat.map(r => {
-            if (r.hasMedia) {
-              r.imageUrl = `storage/projects/${deviceId}/${r.id.id}.png`;
-              return r;
-            }
-          });
-          resolve(chat);
-        } catch (error) {
-          resolve({
-            error: true,
-            message: 'No Message',
-          });
-        }
-      });
-    });
-  }
+  //         const chat = await data.fetchMessages({ limit });
+  //         chat.map(r => {
+  //           if (r.hasMedia) {
+  //             r.imageUrl = `storage/projects/${deviceId}/${r.id.id}.png`;
+  //             return r;
+  //           }
+  //         });
+  //         resolve(chat);
+  //       } catch (error) {
+  //         resolve({
+  //           error: true,
+  //           message: 'No Message',
+  //         });
+  //       }
+  //     });
+  //   });
+  // }
 }

@@ -10,29 +10,27 @@ import * as helmet from 'helmet';
 // app module
 import { AppModule } from './app.module';
 
-const { SSL, SSL_CERT, SSL_KEY, NODE_ENV, PORT } = process.env;
+const { SSL, NODE_ENV, PORT, DOMAIN, APP_NAME } = process.env;
 const PROD = NODE_ENV === 'production' ? true : false;
 
 // add config
 let appOpt = {};
 
-if (SSL != 'FALSE') {
-  appOpt = {
-    ...appOpt,
-    httpsOptions: {
-      key: readFileSync(SSL_KEY, 'utf8'),
-      cert: readFileSync(SSL_CERT, 'utf8'),
-    },
-  };
+let httpsOptions = null;
+if (SSL == 'ON') {
+  httpsOptions = {
+    key: readFileSync(`/etc/letsencrypt/live/${DOMAIN}/privkey.pem`, 'utf8'),
+    cert: readFileSync(`/etc/letsencrypt/live/${DOMAIN}/fullchain.pem`, 'utf8'),
+    ca: readFileSync(`/etc/letsencrypt/live/${DOMAIN}/chain.pem`, 'utf8')
+  }
 }
-
-appOpt = PROD ? { ...appOpt, logger: false } : { ...appOpt };
 
 async function bootstrap() {
   try {
     const app = await NestFactory.create<NestExpressApplication>(AppModule, {
       ...appOpt,
-      logger: (PROD ? [] : ['debug', 'log', 'warn', 'error'])
+      logger: (PROD ? ['error'] : false),
+      httpsOptions
     });
 
     // const configService = app.get(ConfigService);
@@ -54,7 +52,7 @@ async function bootstrap() {
     if (!PROD) {
       // CORS security
       app.enableCors();
-
+    } else {
       // compression
       app.use(compression());
 
@@ -69,8 +67,8 @@ async function bootstrap() {
 
     await app.listen(PORT);
     Logger.log(
-      `[${process.env.NODE_ENV.toUpperCase()}] run at http${SSL == 'TRUE' ? 's' : ''}://localhost:${PORT}`,
-      `${process.env.APP_NAME}`,
+      `[${NODE_ENV.toUpperCase()}] run at http${SSL == 'TRUE' ? 's' : ''}://localhost:${PORT}`,
+      `${APP_NAME}`, true
     );
   } catch (error) {
     Logger.error(error.message, error.stack, 'Bootstrap');

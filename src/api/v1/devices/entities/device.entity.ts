@@ -24,6 +24,11 @@ export class Device {
     })
     session: string;
 
+    @Column({
+        nullable: true
+    })
+    status: string;
+
     @Column('boolean', {
         default: true
     })

@@ -6,12 +6,9 @@ import { DevicesService } from '../devices/devices.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { UpdateMessageDto } from './dto/update-message.dto';
 import { Message } from './entities/message.entity';
-
-
-const logger = new Logger('Message')
 @Injectable()
 export class MessagesService {
-
+  private logger = new Logger(MessagesService.name)
   constructor(
     @InjectRepository(Message) private msgRepo: Repository<Message>,
     @Inject(forwardRef(() => DevicesService))
@@ -19,13 +16,23 @@ export class MessagesService {
   ) { }
 
   async create(createMessageDto: CreateMessageDto) {
-    logger.debug('send message to Whatsapp')
-    const device = await this.deviceService.findByToken(createMessageDto.token);
-    logger.debug('save Message')
-    return this.msgRepo.save({
-      ...createMessageDto,
-      owner: device.deviceId
-    })
+    try {
+      const device = await this.deviceService.findByToken(createMessageDto.token);
+      const { deviceId, session } = device;
+      const msg = await this.deviceService.sendMessage(deviceId, session, createMessageDto);
+
+      if (msg == null) {
+        return "Please pair device."
+      }
+      this.logger.debug('save Message')
+      return this.msgRepo.save({
+        ...createMessageDto,
+        owner: device.deviceId
+      })
+
+    } catch (error) {
+      return error
+    }
   }
 
   async findAll(deviceId: string, query: GetQueryDto) {

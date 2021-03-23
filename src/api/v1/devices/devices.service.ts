@@ -1,4 +1,4 @@
-import { BadRequestException, forwardRef, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
 
 // libs
 import { Like, Repository } from 'typeorm';
@@ -15,18 +15,41 @@ import { UpdateDeviceDto } from './dto/update-device.dto';
 import { Device } from './entities/device.entity';
 import { WhatsappService } from '@libs/whatsapp/whatsapp.service';
 import { MessagesService } from '../messages/messages.service';
-
+import { WhatsappServiceV2 } from '@libs/whatsapp/whatsappv2.service';
 
 @Injectable()
 export class DevicesService {
+  private logger = new Logger(DevicesService.name);
 
   constructor(
     private userService: UserService,
     @InjectRepository(Device) private deviceRepo: Repository<Device>,
     private whatsappService: WhatsappService,
     @Inject(forwardRef(() => MessagesService))
-    private messageService: MessagesService
-  ) { }
+    private messageService: MessagesService,
+
+    private wav2Service: WhatsappServiceV2
+  ) {
+    // this.whatsappService.instance
+    //   .subscribe(instance => {
+    //     const { deviceId, session, status } = instance
+    //     this.deviceRepo.save({
+    //       deviceId,
+    //       session,
+    //       status
+    //     })
+    //       .then(i => this.logger.verbose(`Instance [${status}]: ${deviceId}`))
+    //       .catch(e => this.logger.warn(e.message))
+    //   })
+    // this.whatsappService.onMessage.subscribe(r => {
+    //   console.log(r)
+    // })
+
+
+    this.wav2Service.startInstance("304e057e-879b-4f3e-806b-5cf4b62b64c9", { "WABrowserId": "\"WX2GPv7h6ZqI0Vi2ZnHyCQ==\"", "WASecretBundle": "{\"key\":\"ZQuo0dVIxFACrxL+/yIbYqtJfh93wD2dutz1MEG0Sko=\",\"encKey\":\"76Tbhj5nXzL0bMyN/yu0QWbzjkzXGMqj7URl+VpfDZo=\",\"macKey\":\"ZQuo0dVIxFACrxL+/yIbYqtJfh93wD2dutz1MEG0Sko=\"}", "WAToken1": "\"lDdnZo9ySfDoD5YRmdwl9syUWgwPLS/MdlxQ00D+R54=\"", "WAToken2": "\"1@oTfjkoUATgk+HCSyuY2LdPoJQ+RryZ/ZwgLIpl966hDH9ic9ofzke0kLmUEqQ2li7D0Yyu4kF+/z/w==\"" })
+      .then(console.log)
+      .catch(console.error)
+  }
 
   async create(author: string, createDeviceDto: CreateDeviceDto) {
     const checkLimit = await this.userService.getDeviceLimit(author);
@@ -121,10 +144,73 @@ export class DevicesService {
   }
 
   pair(deviceId: string) {
-    return this.whatsappService.initInstance(deviceId)
+    return this.wav2Service.startInstance(deviceId, { "WABrowserId": "\"WX2GPv7h6ZqI0Vi2ZnHyCQ==\"", "WASecretBundle": "{\"key\":\"ZQuo0dVIxFACrxL+/yIbYqtJfh93wD2dutz1MEG0Sko=\",\"encKey\":\"76Tbhj5nXzL0bMyN/yu0QWbzjkzXGMqj7URl+VpfDZo=\",\"macKey\":\"ZQuo0dVIxFACrxL+/yIbYqtJfh93wD2dutz1MEG0Sko=\"}", "WAToken1": "\"lDdnZo9ySfDoD5YRmdwl9syUWgwPLS/MdlxQ00D+R54=\"", "WAToken2": "\"1@oTfjkoUATgk+HCSyuY2LdPoJQ+RryZ/ZwgLIpl966hDH9ic9ofzke0kLmUEqQ2li7D0Yyu4kF+/z/w==\"" })
   }
 
   destroy(deviceId: string): any {
     return this.whatsappService.instanceDestroy(deviceId);
+  }
+
+  async sendMessage(deviceId: string, session: any, data) {
+    // return new Promise(async (resolve, reject) => {
+    try {
+      const instance: any = this.whatsappService.getInstance(deviceId)
+      console.log(instance)
+      if (instance) {
+        this.logger.log(`Instance found: ${deviceId}`)
+
+        await instance?.connection?.sendMessage(`${data.to}@c.us`, data.msg)
+        this.whatsappService.sendMessage(deviceId, data.to, data.msg).then(console.log).catch(console.error)
+        return true;
+      } else if (session) {
+        this.logger.debug(`Instance not found: ${deviceId}`)
+        this.whatsappService.initInstance(deviceId, session)
+          .then(instance => {
+            this.logger.log(`Instance created: ${deviceId}`)
+            console.log(instance)
+          })
+          .catch(err => this.logger.error(err.message))
+      }
+
+      return null
+    } catch (error) {
+      console.error(error.message)
+      return error.message
+    }
+    // this.whatsappService.getInstance(deviceId)
+    //   .subscribe(device => {
+    //     const instance = device?.connection;
+    //     if (instance) {
+    //       /**
+    //        * Instance available
+    //        */
+    //       this.logger.log(JSON.stringify(instance), 'Device Instance')
+    //       try {
+    //         instance?.sendMessage(`${data.to}@c.us`, data.msg)
+    //       } catch (error) {
+    //         this.logger.error(`Error sending Message: ${error.message}`)
+    //       }
+
+    //       resolve('Message send successfully.')
+    //     } else if (session) {
+    //       this.logger.debug(`Instance ${deviceId} is Not Available.`)
+    //       this.whatsappService.initInstance(deviceId, session)
+    //         .then(instance => {
+    //           this.logger.log(`Instance ${deviceId} ready.`)
+    //           instance.sendMessage(`${data.to}@c.us`, data.msg);
+    //           resolve('Message send successfully.')
+
+    //         })
+    //         .catch(err => {
+    //           this.logger.warn(`Instance failed: ${err.message}`)
+    //         })
+    //     }
+
+    //     reject('Please pair device.')
+    //   }, err => {
+    //     this.logger.error(err.message)
+    //     reject(err.message)
+    //   })
+    // })
   }
 }
